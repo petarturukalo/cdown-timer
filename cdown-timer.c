@@ -11,24 +11,30 @@
 #define SECS_IN_MIN 60
 #define MINS_IN_HR 60
 
+struct time {
+	int secs;
+	int mins;
+	int hrs;
+};
+
 /*
  * Split seconds into formatted parts seconds, mins and hours to give
  * time in format hh:mm:ss.
  */
-void seconds_to_fmttime(long seconds, int *secs, int *mins, int *hrs)
+void seconds_to_fmttime(long seconds, struct time *t)
 {
-	*secs = seconds%SECS_IN_MIN;
-	*mins = seconds/SECS_IN_MIN;
-	*hrs= *mins/MINS_IN_HR;
-	*mins %= MINS_IN_HR;
+	t->secs = seconds%SECS_IN_MIN;
+	t->mins = seconds/SECS_IN_MIN;
+	t->hrs = t->mins/MINS_IN_HR;
+	t->mins %= MINS_IN_HR;
 }
 
 /*
  * Convert formatted time hh:mm:ss into seconds.
  */
-long fmttime_to_seconds(int secs, int mins, int hrs)
+long fmttime_to_seconds(struct time *t)
 {
-	return secs+SECS_IN_MIN*mins+(SECS_IN_MIN*MINS_IN_HR*hrs);
+	return t->secs + SECS_IN_MIN*t->mins + (SECS_IN_MIN*MINS_IN_HR*t->hrs);
 }
 
 /*
@@ -36,11 +42,11 @@ long fmttime_to_seconds(int secs, int mins, int hrs)
  */
 void print_time(long seconds)
 {
-	int secs, mins, hrs;
+	struct time t;
 
-	seconds_to_fmttime(seconds, &secs, &mins, &hrs);
+	seconds_to_fmttime(seconds, &t);
 
-	printf("\r%02d:%02d:%02d", hrs, mins, secs);
+	printf("\r%02d:%02d:%02d", t.hrs, t.mins, t.secs);
 	fflush(stdout);
 }
 
@@ -65,7 +71,7 @@ void handle_interrupt(int n)
 int main(int argc, char *argv[])
 {
 	long seconds;
-	int secs, mins, hrs;
+	struct time t;
 
 	// Secs, mins, and hours is 3 args. Add 1 for progam name.
 	if (argc != 4) {
@@ -73,11 +79,11 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	hrs = atoi(argv[1]);
-	mins = atoi(argv[2]);
-	secs = atoi(argv[3]);
+	t.hrs = atoi(argv[1]);
+	t.mins = atoi(argv[2]);
+	t.secs = atoi(argv[3]);
 
-	seconds = fmttime_to_seconds(secs, mins, hrs);
+	seconds = fmttime_to_seconds(&t);
 	signal(SIGINT, handle_interrupt);
 
 	// Start the timer and wait for it to finish.
@@ -85,8 +91,6 @@ int main(int argc, char *argv[])
 		print_time(seconds);
 		sleep(1);
 	}
-
 	printf("\n");
-	
 	return 0;
 }
